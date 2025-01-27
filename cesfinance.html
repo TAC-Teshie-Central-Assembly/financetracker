@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tithe and Offering History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Tithe and Offering History</h2>
+        
+        <!-- Authentication Token Check -->
+        <div id="authPrompt">
+            <label for="authToken">Enter your authentication token:</label>
+            <input type="text" id="authToken" class="form-control">
+            <button id="authSubmit" class="btn btn-primary mt-2">Authenticate</button>
+        </div>
+        
+        <!-- History Section -->
+        <div id="historySection" style="display:none;">
+            <div class="row mb-3">
+                <div class="col-4">
+                    <input type="text" id="search" class="form-control" placeholder="Search by date or tithe/offering" oninput="renderHistory()">
+                </div>
+                <div class="col-4">
+                    <button id="addRecordBtn" class="btn btn-success">Add Record</button>
+                </div>
+            </div>
+            
+            <div id="historyList" class="mt-3"></div>
+            
+            <!-- Share Button -->
+            <button id="shareHistory" class="btn btn-primary mt-3">Share History</button>
+            <button id="exportHistory" class="btn btn-info mt-3">Export History</button>
+            <input type="file" id="importHistory" class="btn btn-warning mt-3" style="display:none;">
+            <button id="importHistoryBtn" class="btn btn-warning mt-3">Import History</button>
+        </div>
+        
+        <!-- Add/Edit Record Modal -->
+        <div id="recordModal" class="modal" tabindex="-1" aria-labelledby="recordModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 id="recordModalLabel" class="modal-title">Add New Record</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group mb-3">
+                            <label for="dateInput">Date</label>
+                            <input type="date" id="dateInput" class="form-control">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="titheInput">Tithe</label>
+                            <input type="number" id="titheInput" class="form-control" step="0.01">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="offeringInput">Offering</label>
+                            <input type="number" id="offeringInput" class="form-control" step="0.01">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" id="saveRecordBtn" class="btn btn-primary">Save Record</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // Predefined authentication token
+            const predefinedToken = "abc123"; // Change this to a unique token
+            const storedToken = localStorage.getItem('deviceToken');
+            let historyData = [
+                { date: '2025-01-01', tithe: '50', offering: '20' },
+                { date: '2025-01-02', tithe: '30', offering: '15' },
+                { date: '2025-01-03', tithe: '60', offering: '25' },
+                // Add more entries as needed
+            ];
+            let editIndex = -1; // -1 means we're adding a new record
+            
+            // Handle authentication
+            document.getElementById('authSubmit').addEventListener('click', () => {
+                const userToken = document.getElementById('authToken').value;
+                if (userToken === predefinedToken) {
+                    localStorage.setItem('deviceToken', userToken);
+                    alert('Authentication successful!');
+                    document.getElementById('authPrompt').style.display = 'none';
+                    document.getElementById('historySection').style.display = 'block';
+                    renderHistory();
+                } else {
+                    alert('Invalid token. This app is tied to a specific device.');
+                }
+            });
+
+            // Handle adding new records
+            document.getElementById('addRecordBtn').addEventListener('click', () => {
+                // Reset inputs for a new record
+                document.getElementById('dateInput').value = '';
+                document.getElementById('titheInput').value = '';
+                document.getElementById('offeringInput').value = '';
+                editIndex = -1; // We're adding a new record
+                document.getElementById('recordModalLabel').textContent = "Add New Record";
+                const modal = new bootstrap.Modal(document.getElementById('recordModal'));
+                modal.show();
+            });
+
+            // Save or update the record
+            document.getElementById('saveRecordBtn').addEventListener('click', () => {
+                const date = document.getElementById('dateInput').value;
+                const tithe = document.getElementById('titheInput').value;
+                const offering = document.getElementById('offeringInput').value;
+
+                if (date && tithe && offering) {
+                    const record = { date, tithe, offering };
+                    if (editIndex === -1) {
+                        // Add new record
+                        historyData.push(record);
+                    } else {
+                        // Update existing record
+                        historyData[editIndex] = record;
+                    }
+
+                    // Close modal and re-render the list
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('recordModal'));
+                    modal.hide();
+                    renderHistory();
+                } else {
+                    alert('All fields are required!');
+                }
+            });
+
+            // Handle editing a record
+            function editRecord(index) {
+                const record = historyData[index];
+                document.getElementById('dateInput').value = record.date;
+                document.getElementById('titheInput').value = record.tithe;
+                document.getElementById('offeringInput').value = record.offering;
+                editIndex = index; // Set editIndex to the record index
+                document.getElementById('recordModalLabel').textContent = "Edit Record";
+                const modal = new bootstrap.Modal(document.getElementById('recordModal'));
+                modal.show();
+            }
+
+            // Handle deleting a record
+            function deleteRecord(index) {
+                if (confirm('Are you sure you want to delete this record?')) {
+                    historyData.splice(index, 1);
+                    renderHistory();
+                }
+            }
+
+            // Pagination & Render History
+            let currentPage = 1;
+            const itemsPerPage = 5;
+
+            function renderHistory() {
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '';
+
+                const searchQuery = document.getElementById('search').value.toLowerCase();
+                const filteredData = historyData.filter(entry =>
+                    entry.date.toLowerCase().includes(searchQuery) ||
+                    entry.tithe.toLowerCase().includes(searchQuery) ||
+                    entry.offering.toLowerCase().includes(searchQuery)
+                );
+
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+
+                if (paginatedData.length === 0) {
+                    historyList.innerHTML = '<p class="text-muted">No matching data found.</p>';
+                    return;
+                }
+
+                paginatedData.forEach((entry, index) => {
+                    const entryDiv = document.createElement('div');
+                    entryDiv.classList.add('mb-3');
+                    entryDiv.innerHTML = `
+                        <strong>${entry.date}</strong><br>
+                        Local offerings - ${entry.offering}<br>
+                        Tithe - ${entry.tithe}<br>
+                        <button class="btn btn-warning btn-sm" onclick="editRecord(${startIndex + index})">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteRecord(${startIndex + index})">Delete</button>
+                    `;
+                    historyList.appendChild(entryDiv);
+                });
+
+                // Pagination
+                const paginationDiv = document.createElement('div');
+                paginationDiv.classList.add('pagination', 'justify-content-center');
+                const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageButton = document.createElement('button');
+                    pageButton.classList.add('btn', 'btn-secondary', 'mx-1');
+                    pageButton.textContent = i;
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        renderHistory();
+                    });
+                    paginationDiv.appendChild(pageButton);
+                }
+
+                historyList.appendChild(paginationDiv);
+            }
+
+            // Share Button Functionality
+            document.getElementById('shareHistory').addEventListener('click', () => {
+                // Convert history data to plain text
+                let historyText = '';
+                historyData.forEach(entry => {
+                    historyText += `${entry.date}\nLocal offerings - ${entry.offering}\nTithe - ${entry.tithe}\n\n`;
+                });
+
+                // Check if the browser supports sharing
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Tithe and Offering History',
+                        text: historyText
+                    }).catch(console.error);
+                } else {
+                    alert('Sharing is not supported in this browser.');
+                }
+            });
+
+            // Export History Functionality
+            document.getElementById('exportHistory').addEventListener('click', () => {
+                const historyDataStr = JSON.stringify(historyData, null, 2);
+                const blob = new Blob([historyDataStr], { type: 'application/json' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'history.json';
+                link.click();
+            });
+
+            // Import History Functionality
+            document.getElementById('importHistoryBtn').addEventListener('click', () => {
+                document.getElementById('importHistory').click();
+            });
+
+            document.getElementById('importHistory').addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const importedData = JSON.parse(reader.result);
+                            historyData = importedData;
+                            renderHistory();
+                        } catch (e) {
+                            alert('Invalid file format!');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Initial rendering
+            renderHistory();
+        </script>
+        
+        <!-- Bootstrap JS Bundle -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    </div>
+</body>
+</html>
