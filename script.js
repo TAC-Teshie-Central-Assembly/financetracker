@@ -162,13 +162,11 @@ document.getElementById('shareHistory').addEventListener('click', () => {
         titheToDate += entry.tithe;       
     });
 
-    console.log("offering to date "+offeringToDate);
-    console.log("tithe to date "+titheToDate);
-
     historyText += `================\n`;
     historyText += `TOTALS\n`;
+    historyText += `================\n`;
+    historyText += `Local Offerings - ${offeringToDate}\nTithe - ${titheToDate}\n`;
     historyText += `================\n\n`;
-    historyText += `Local Offerings - ${offeringToDate}\nTithe - ${titheToDate}\n\n`;
 
     // Check if the browser supports sharing
     if (navigator.share) {
