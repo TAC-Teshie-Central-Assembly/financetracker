@@ -6,6 +6,7 @@ document.getElementById('authSubmit').addEventListener('click', () => {
     if (token === '12345') {
         document.getElementById('authPrompt').style.display = 'none';
         document.getElementById('historySection').style.display = 'block';
+        renderHistory();
     } else {
         alert('Invalid token.');
     }
@@ -45,8 +46,8 @@ function renderHistory() {
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h5>${record.date}</h5>
-                    <p>Tithe: $${record.tithe.toFixed(2)}</p>
-                    <p>Offering: $${record.offering.toFixed(2)}</p>
+                    <p>Tithe: GHS ${record.tithe.toFixed(2)}</p>
+                    <p>Offering: GHS ${record.offering.toFixed(2)}</p>
                 </div>
                 <div>
                     <button class="btn btn-sm btn-warning me-2" onclick="editRecord(${index})">Edit</button>
@@ -130,18 +131,17 @@ document.getElementById('saveRecordBtn').addEventListener('click', () => {
     renderHistory();
 });
 
-function confirmDelete(index) {
+ // Handle deleting a record
+ function deleteRecord(index) {
     if (confirm('Are you sure you want to delete this record?')) {
-        deleteRecord(index);
+        historyData.splice(index, 1);
+    // Save data to localStorage
+        localStorage.setItem('historyData', JSON.stringify(historyData));
+        renderHistory();
     }
 }
 
-function deleteRecord(index) {
-    historyData.splice(index, 1);
-    // Save data to localStorage
-    localStorage.setItem('historyData', JSON.stringify(historyData));
-    renderHistory();
-}
+
 
 document.getElementById('addRecordBtn').addEventListener('click', () => {
     document.getElementById('dateInput').value = '';
@@ -154,9 +154,21 @@ document.getElementById('addRecordBtn').addEventListener('click', () => {
 document.getElementById('shareHistory').addEventListener('click', () => {
     // Convert history data to plain text
     let historyText = '';
+    let offeringToDate = 0;
+    let titheToDate = 0;
     historyData.forEach(entry => {
         historyText += `${entry.date}\nLocal offerings - ${entry.offering}\nTithe - ${entry.tithe}\n\n`;
+        offeringToDate += entry.offering;
+        titheToDate += entry.tithe;       
     });
+
+    console.log("offering to date "+offeringToDate);
+    console.log("tithe to date "+titheToDate);
+
+    historyText += `================\n`;
+    historyText += `TOTALS\n`;
+    historyText += `================\n\n`;
+    historyText += `Local Offerings - ${offeringToDate}\nTithe - ${titheToDate}\n\n`;
 
     // Check if the browser supports sharing
     if (navigator.share) {
