@@ -8,8 +8,8 @@ const FILES_TO_CACHE = [
   '/',
   '/index.html',
   '/styles.css', // Your CSS file(s)
-  '/app.js',      // Your JavaScript file(s)
-  '/icon.png',    // Your app icon (optional)
+  '/script.js',     // Your app icon (optional)
+  '/favicon.ico',    // Your app icon (optional)
 ];
 
 // Install event - cache necessary files
