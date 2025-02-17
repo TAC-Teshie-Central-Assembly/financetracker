@@ -3,7 +3,7 @@ let editingIndex = null;
 
 document.getElementById('authSubmit').addEventListener('click', () => {
     const token = document.getElementById('authToken').value.trim();
-    if (token === '12345') {
+    if (token === '02159') {
         document.getElementById('authPrompt').style.display = 'none';
         document.getElementById('historySection').style.display = 'block';
         renderHistory();
