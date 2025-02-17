@@ -5,11 +5,11 @@ const CACHE_NAME = 'my-app-cache-v1';
 
 // List of files to cache (this can be dynamically generated if needed)
 const FILES_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/styles.css', // Your CSS file(s)
-  '/script.js',     // Your app icon (optional)
-  '/favicon.ico',    // Your app icon (optional)
+  './',
+  './index.html',
+  './styles.css', // Your CSS file(s)
+  './script.js',     // Your app icon (optional)
+  './favicon.ico',    // Your app icon (optional)
 ];
 
 // Install event - cache necessary files
