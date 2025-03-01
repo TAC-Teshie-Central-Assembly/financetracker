@@ -44,9 +44,9 @@ function renderHistory() {
         card.className = 'card p-3';
         card.innerHTML = `
             <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h5>${record.date}</h5>
-                    <p>Tithe: GHS ${record.tithe.toFixed(2)}</p>
+                <div style='font-size:9pt'>
+                    <p style="font-weight:bolder">${record.date}</p>
+                    <p class="text-mute">Tithe: GHS ${record.tithe.toFixed(2)}</p>
                     <p>Offering: GHS ${record.offering.toFixed(2)}</p>
                 </div>
                 <div>
@@ -175,7 +175,14 @@ document.getElementById('shareHistory').addEventListener('click', () => {
             text: historyText
         }).catch(console.error);
     } else {
-        alert('Sharing is not supported in this browser.');
+        // Fallback for browsers that do not support clipboard API
+        const textarea = document.createElement('textarea');
+        textarea.value = historyText;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('Text copied to clipboard successfully (fallback method).');
     }
 });
 
